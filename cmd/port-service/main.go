@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"port-service/internal/config"
-	"port-service/internal/repositoty/inmem"
+	"port-service/internal/repository/inmem"
 	"port-service/internal/services"
 	"port-service/internal/transport"
 	"syscall"

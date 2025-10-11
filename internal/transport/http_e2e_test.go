@@ -44,7 +44,7 @@ func TestUploadPorts(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, http.StatusOK, res.StatusCode)
-	// Сравнение JSON по семантике, чтобы игнорировать перевод строки/пробелы/порядок ключей
+	// Сравнение JSON по семантике, игнорируя перевод строки/пробелы/порядок ключей
 	require.JSONEq(t, string(portsResponse), string(data))
 
 	storedPortsTotal, err := portService.CountPorts(context.Background())

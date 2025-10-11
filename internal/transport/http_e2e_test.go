@@ -7,15 +7,20 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
-
+	_"embed"
 	"port-service/internal/repository/inmem"
 	"port-service/internal/services"
 	"port-service/internal/transport"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
+
+//go:embed testfixtures/ports_request.json
+var portsRequest []byte
+
+//go:embed testfixtures/ports_response.json
+var portsResponse []byte
 
 type HttpTestSuite struct {
 	suite.Suite
@@ -24,63 +29,58 @@ type HttpTestSuite struct {
 }
 
 func NewHttpTestSuite() *HttpTestSuite {
-	suite := &HttpTestSuite{}
+	s := &HttpTestSuite{}
+	store := inmem.NewPortStore()
+	s.portService = services.NewPortService(store)
+	s.httpServer = transport.NewHttpServer(s.portService)
+	return s
+}
 
-	portStoreRepo := inmem.NewPortStore()
-
-	suite.portService = services.NewPortService(portStoreRepo)
-
-	suite.httpServer = transport.NewHttpServer(suite.portService)
-
-	return suite
+// Чтобы каждый тест стартовал с чистым состоянием стора
+func (s *HttpTestSuite) SetupTest() {
+	store := inmem.NewPortStore()
+	s.portService = services.NewPortService(store)
+	s.httpServer = transport.NewHttpServer(s.portService)
 }
 
 func TestHttpTestSuite(t *testing.T) {
 	suite.Run(t, NewHttpTestSuite())
 }
 
-func (suite *HttpTestSuite) TestUploadPorts() {
-	portsRequest, err := os.ReadFile("testfixtures/ports_request.json")
-	require.NoError(suite.T(), err)
-
-	requestPortsTotal := countJSONPorts(suite.T(), portsRequest)
-
-	portsResponse, err := os.ReadFile("testfixtures/ports_response.json")
-	require.NoError(suite.T(), err)
+func (s *HttpTestSuite) TestUploadPorts() {
+	// Подсчёт ожидаемого количества уникальных портов из запроса
+	requestPortsTotal := countJSONPorts(s.T(), portsRequest)
 
 	req := httptest.NewRequest(http.MethodPost, "/ports", bytes.NewBuffer(portsRequest))
-
 	w := httptest.NewRecorder()
 
-	suite.httpServer.UploadPorts(w, req)
+	s.httpServer.UploadPorts(w, req)
 
 	res := w.Result()
 	defer res.Body.Close()
 
 	data, err := io.ReadAll(res.Body)
-	require.NoError(suite.T(), err)
+	require.NoError(s.T(), err)
 
-	require.Equal(suite.T(), http.StatusOK, res.StatusCode)
-	require.Equal(suite.T(), portsResponse, data)
+	require.Equal(s.T(), http.StatusOK, res.StatusCode)
+	// Сравниваем JSON по семантике, чтобы игнорировать перевод строки/пробелы/порядок ключей
+	require.JSONEq(s.T(), string(portsResponse), string(data))
 
-	storedPortsTotal, err := suite.portService.CountPorts(context.Background())
-	require.NoError(suite.T(), err)
-
-	require.Equal(suite.T(), requestPortsTotal, storedPortsTotal)
+	storedPortsTotal, err := s.portService.CountPorts(context.Background())
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), requestPortsTotal, storedPortsTotal)
 }
 
-func (suite *HttpTestSuite) TestUploadPorts_badJSON() {
-
+func (s *HttpTestSuite) TestUploadPorts_badJSON() {
 	req := httptest.NewRequest(http.MethodPost, "/ports", bytes.NewBuffer([]byte("blabla")))
-
 	w := httptest.NewRecorder()
 
-	suite.httpServer.UploadPorts(w, req)
+	s.httpServer.UploadPorts(w, req)
 
 	res := w.Result()
 	defer res.Body.Close()
 
-	require.Equal(suite.T(), http.StatusBadRequest, res.StatusCode)
+	require.Equal(s.T(), http.StatusBadRequest, res.StatusCode)
 }
 
 func countJSONPorts(t *testing.T, portsJSON []byte) int {

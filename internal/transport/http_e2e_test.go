@@ -3,7 +3,7 @@ package transport_test
 import (
 	"bytes"
 	"context"
-	_"embed"
+	_ "embed"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -49,7 +49,8 @@ func TestHttpTestSuite(t *testing.T) {
 
 func (s *HttpTestSuite) TestUploadPorts() {
 	// Подсчёт ожидаемого количества уникальных портов из запроса
-	requestPortsTotal := countJSONPorts(s.T(), portsRequest)
+	requestPortsTotal, err := countJSONPorts(portsRequest)
+	s.Require().NoError(err)
 
 	req := httptest.NewRequest(http.MethodPost, "/ports", bytes.NewBuffer(portsRequest))
 	w := httptest.NewRecorder()
@@ -83,11 +84,12 @@ func (s *HttpTestSuite) TestUploadPorts_badJSON() {
 	s.Require().Equal(http.StatusBadRequest, res.StatusCode)
 }
 
-func countJSONPorts(t *testing.T, portsJSON []byte) int {
-	t.Helper()
+// countJSONPorts возвращает количество ключей верхнего уровня в JSON-объекте
+// и не зависит от testing.T, чтобы не требовать s.T() в местах вызова.
+func countJSONPorts(portsJSON []byte) (int, error) {
 	var ports map[string]struct{}
 	if err := json.Unmarshal(portsJSON, &ports); err != nil {
-		t.Fatalf("failed to unmarshal ports JSON: %v", err)
+		return 0, err
 	}
-	return len(ports)
+	return len(ports), nil
 }

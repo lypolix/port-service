@@ -17,7 +17,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-
 type HttpTestSuite struct {
 	suite.Suite
 	portService transport.PortService

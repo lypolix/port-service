@@ -27,9 +27,17 @@ jobs:
           go-version: ${{ matrix.go }}
           check-latest: true
           cache: true
+          cache-dependency-path: go.sum
+
+      - name: Tidy modules
+        run: go mod tidy
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
+          # версия без патч-номера — подтянется последний патч
           version: v1.59.1
-          
+          # при необходимости можно включить анализ тестов (обычно включён по умолчанию):
+          # args: --tests=true
+          # или указать кастомный конфиг:
+          # args: --config .golangci.yml

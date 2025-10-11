@@ -11,6 +11,7 @@ import (
 
 func TestPortStore_CreateOrUpdatePort(t *testing.T) {
 	t.Parallel()
+
 	store := NewPortStore()
 
 	t.Run("create port", func(t *testing.T) {
@@ -23,9 +24,9 @@ func TestPortStore_CreateOrUpdatePort(t *testing.T) {
 
 		port, err := store.GetPort(context.Background(), randomPort.ID())
 		require.NoError(t, err)
-
-		require.Equal(t, port, randomPort)
+		require.Equal(t, randomPort, port)
 	})
+
 	t.Run("update port", func(t *testing.T) {
 		t.Parallel()
 
@@ -36,8 +37,7 @@ func TestPortStore_CreateOrUpdatePort(t *testing.T) {
 
 		beforeUpdatePort, err := store.GetPort(context.Background(), randomPort.ID())
 		require.NoError(t, err)
-
-		require.Equal(t, beforeUpdatePort, randomPort)
+		require.Equal(t, randomPort, beforeUpdatePort)
 
 		err = randomPort.SetName("updated name")
 		require.NoError(t, err)
@@ -47,11 +47,12 @@ func TestPortStore_CreateOrUpdatePort(t *testing.T) {
 
 		updatedPort, err := store.GetPort(context.Background(), randomPort.ID())
 		require.NoError(t, err)
-
 		require.NotEqual(t, beforeUpdatePort.Name(), updatedPort.Name())
 	})
+
 	t.Run("nil port", func(t *testing.T) {
 		t.Parallel()
+
 		err := store.CreateOrUpdatePort(context.Background(), nil)
 		require.ErrorIs(t, err, domain.ErrNil)
 	})
@@ -59,9 +60,21 @@ func TestPortStore_CreateOrUpdatePort(t *testing.T) {
 
 func newRandomDomainPort(t *testing.T) *domain.Port {
 	t.Helper()
+
 	randomID := uuid.New().String()
-	port, err := domain.NewPort(randomID, randomID, randomID, randomID, randomID,
-		[]string{randomID}, []string{randomID}, []float64{1.0, 2.0}, randomID, randomID, nil)
+	port, err := domain.NewPort(
+		randomID,        // id
+		randomID,        // name
+		randomID,        // code
+		randomID,        // city
+		randomID,        // country
+		[]string{randomID},      // alias
+		[]string{randomID},      // regions
+		[]float64{1.0, 2.0},     // coordinates (lon, lat)
+		randomID,        // province
+		randomID,        // timezone
+		nil,             // unlocs (если конструктор допускает nil; иначе подайте []string{randomID})
+	)
 	require.NoError(t, err)
 
 	return port

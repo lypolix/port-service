@@ -13,7 +13,6 @@ import (
 	"port-service/internal/repository/inmem"
 	"port-service/internal/services"
 	"port-service/internal/transport"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -61,15 +60,15 @@ func (s *HttpTestSuite) TestUploadPorts() {
 	defer res.Body.Close()
 
 	data, err := io.ReadAll(res.Body)
-	require.NoError(s.T(), err)
+	s.Require().NoError(err)
 
-	require.Equal(s.T(), http.StatusOK, res.StatusCode)
+	s.Require().Equal(http.StatusOK, res.StatusCode)
 	// Сравниваем JSON по семантике, чтобы игнорировать перевод строки/пробелы/порядок ключей
-	require.JSONEq(s.T(), string(portsResponse), string(data))
+	s.Require().JSONEq(string(portsResponse), string(data))
 
 	storedPortsTotal, err := s.portService.CountPorts(context.Background())
-	require.NoError(s.T(), err)
-	require.Equal(s.T(), requestPortsTotal, storedPortsTotal)
+	s.Require().NoError(err)
+	s.Require().Equal(requestPortsTotal, storedPortsTotal)
 }
 
 func (s *HttpTestSuite) TestUploadPorts_badJSON() {
@@ -81,13 +80,14 @@ func (s *HttpTestSuite) TestUploadPorts_badJSON() {
 	res := w.Result()
 	defer res.Body.Close()
 
-	require.Equal(s.T(), http.StatusBadRequest, res.StatusCode)
+	s.Require().Equal(http.StatusBadRequest, res.StatusCode)
 }
 
 func countJSONPorts(t *testing.T, portsJSON []byte) int {
 	t.Helper()
 	var ports map[string]struct{}
-	err := json.Unmarshal(portsJSON, &ports)
-	require.NoError(t, err)
+	if err := json.Unmarshal(portsJSON, &ports); err != nil {
+		t.Fatalf("failed to unmarshal ports JSON: %v", err)
+	}
 	return len(ports)
 }

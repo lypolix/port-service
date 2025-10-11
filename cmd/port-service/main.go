@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"port-service/internal/config"
+	"port-service/internal/repositoty/inmem"
 	"port-service/internal/services"
 	"port-service/internal/transport"
 	"syscall"
@@ -27,7 +28,9 @@ func run() error{
 
 	cfg := config.Read()
 
-	portService := services.NewPortService()
+	portStoreRepo := inmem.NewPortStore()
+
+	portService := services.NewPortService(portStoreRepo)
 
 	httpServer := transport.NewHttpServer(portService)
 
@@ -35,6 +38,9 @@ func run() error{
 	router := mux.NewRouter()
 	
 	router.HandleFunc("/port", httpServer.GetPort).Methods("GET")
+	router.HandleFunc("/count", httpServer.CountPorts).Methods("GET")
+	router.HandleFunc("/ports", httpServer.UploadPorts).Methods("POST")
+
 	srv := &http.Server{
 		Addr: cfg.HTTPAddr,
 		Handler: router,

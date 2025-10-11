@@ -3,12 +3,13 @@ package transport_test
 import (
 	"bytes"
 	"context"
+	_"embed"
 	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	_"embed"
+
 	"port-service/internal/repository/inmem"
 	"port-service/internal/services"
 	"port-service/internal/transport"
@@ -36,7 +37,7 @@ func NewHttpTestSuite() *HttpTestSuite {
 	return s
 }
 
-// Чтобы каждый тест стартовал с чистым состоянием стора
+// Каждый тест стартует с чистым состоянием стора
 func (s *HttpTestSuite) SetupTest() {
 	store := inmem.NewPortStore()
 	s.portService = services.NewPortService(store)

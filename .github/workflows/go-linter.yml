@@ -1,29 +1,35 @@
 name: golangci-lint
+
 on:
   push:
-    tags:
-      - v*
-    branches:
-      - master
-      - main
+    tags: [ 'v*' ]
+    branches: [ master, main ]
   pull_request:
+
 permissions:
   contents: read
   pull-requests: read
+
 jobs:
   golangci:
     strategy:
       matrix:
-        go: [1.21.x]
-        os: [macos-latest, ubuntu-latest]
+        go: [ '1.21.x' ]
+        os: [ ubuntu-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
           check-latest: true
           cache: true
-      - name: golangci-lint
+
+      - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.59.1
+          
